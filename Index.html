@@ -1,0 +1,791 @@
+```html
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Конвертер величин</title>
+    <!-- Підключення Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Підключення шрифту Inter та JetBrains Mono для чітких цифр -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        nokia: {
+                            blue: '#005AFF',
+                            dark: '#0F172A',
+                            card: '#1E293B',
+                            accent: '#38BDF8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Приховування смуги прокрутки для горизонтального меню категорій */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Приємний тактильний ефект натискання */
+        .btn-press {
+            transition: transform 0.08s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-press:active {
+            transform: scale(0.95);
+        }
+
+        /* Кастомний вигляд селектів */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.65rem center;
+            background-size: 1em;
+        }
+        .dark select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200 selection:bg-blue-500 selection:text-white">
+
+    <!-- Головний контейнер (оптимізований під ширину смартфона та зручний на десктопі) -->
+    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white dark:bg-slate-900 shadow-2xl sm:my-4 sm:min-h-[calc(100vh-2rem)] sm:rounded-3xl overflow-hidden border-x sm:border border-slate-200 dark:border-slate-800">
+        
+        <!-- Верхня панель (Header) -->
+        <header class="px-4 py-3 bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center shadow-inner">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight leading-none">Конвертер</h1>
+                    <span class="text-[11px] text-slate-400 font-medium">Класична точність</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <!-- Перемикач вбудованої клавіатури -->
+                <button id="toggleNumpadBtn" title="Показати/сховати цифрову панель" class="btn-press p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700">
+                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="hidden xs:inline">Панель</span>
+                </button>
+
+                <!-- Перемикач теми -->
+                <button id="themeToggle" title="Змінити тему" class="btn-press p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
+                    <!-- Іконка сонця (для темної теми) -->
+                    <svg id="sunIcon" class="w-4 h-4 hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <!-- Іконка місяця (для світлої теми) -->
+                    <svg id="moonIcon" class="w-4 h-4 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Стрічка вибору категорій -->
+        <nav class="bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <div id="categoryTabs" class="flex overflow-x-auto no-scrollbar px-2 py-2 gap-1.5 scroll-smooth">
+                <!-- Вкладки генеруються через JS -->
+            </div>
+        </nav>
+
+        <!-- Основна робоча зона -->
+        <main class="flex-1 flex flex-col p-3.5 gap-3 overflow-y-auto">
+            
+            <!-- Картка конвертації (З -> В) -->
+            <div class="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm space-y-2.5">
+                
+                <!-- Блок "З" (Вхідне значення) -->
+                <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border-2 border-blue-500/80 dark:border-blue-500/60 shadow-sm transition-all">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">З одиниці</span>
+                        <select id="fromUnitSelect" class="text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg pl-2.5 pr-7 py-1 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[65%] truncate">
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            id="inputValue" 
+                            inputmode="decimal"
+                            value="1" 
+                            placeholder="0"
+                            aria-label="Введіть значення"
+                            class="w-full bg-transparent font-mono text-3xl font-bold text-slate-900 dark:text-white focus:outline-none tracking-tight"
+                        >
+                        <button id="clearInputBtn" title="Очистити" class="btn-press p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Панель швидких пресетів та кнопка Swap -->
+                <div class="flex items-center justify-between gap-2 px-0.5">
+                    <div class="flex items-center gap-1.5">
+                        <button data-preset="1" class="preset-btn btn-press px-2.5 py-1 text-xs font-mono font-semibold rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200">1</button>
+                        <button data-preset="10" class="preset-btn btn-press px-2.5 py-1 text-xs font-mono font-semibold rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200">10</button>
+                        <button data-preset="100" class="preset-btn btn-press px-2.5 py-1 text-xs font-mono font-semibold rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200">100</button>
+                        <button id="signBtn" title="Змінити знак (+/-)" class="btn-press px-2.5 py-1 text-xs font-mono font-bold rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200">±</button>
+                    </div>
+
+                    <!-- Кнопка Swap (Поміняти місцями) -->
+                    <button id="swapBtn" title="Поміняти місцями" class="btn-press flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                        </svg>
+                        <span>Swap</span>
+                    </button>
+                </div>
+
+                <!-- Блок "В" (Результат) -->
+                <div class="bg-slate-100/90 dark:bg-slate-900/90 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Результат в</span>
+                        <select id="toUnitSelect" class="text-sm font-semibold bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg pl-2.5 pr-7 py-1 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[65%] truncate">
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <div id="outputValue" class="font-mono text-3xl font-bold text-emerald-700 dark:text-emerald-400 truncate select-all tracking-tight">
+                            100
+                        </div>
+                        <button id="copyBtn" title="Копіювати результат" class="btn-press flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-medium shrink-0 shadow-xs">
+                            <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="copyText">Копія</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вбудована цифрова клавіатура (як у класичних утилітах для зручності однією рукою) -->
+            <div id="numpadContainer" class="bg-slate-100 dark:bg-slate-800/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/80 grid grid-cols-4 gap-1.5 shrink-0">
+                <button data-key="7" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">7</button>
+                <button data-key="8" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">8</button>
+                <button data-key="9" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">9</button>
+                <button data-key="BACKSPACE" class="num-key btn-press py-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold flex items-center justify-center border border-amber-200/70 dark:border-amber-800/50" title="Стерти символ">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"/>
+                    </svg>
+                </button>
+
+                <button data-key="4" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">4</button>
+                <button data-key="5" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">5</button>
+                <button data-key="6" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">6</button>
+                <button data-key="CLEAR" class="num-key btn-press py-2.5 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-mono text-base font-bold border border-rose-200/70 dark:border-rose-800/50" title="Очистити все">C</button>
+
+                <button data-key="1" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">1</button>
+                <button data-key="2" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">2</button>
+                <button data-key="3" class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">3</button>
+                <button data-key="00" class="num-key btn-press py-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-700/70 font-mono text-base font-bold text-slate-700 dark:text-slate-200 border border-slate-300/50 dark:border-slate-600/50">00</button>
+
+                <button data-key="0" class="num-key btn-press col-span-2 py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-lg font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">0</button>
+                <button data-key="." class="num-key btn-press py-2.5 rounded-xl bg-white dark:bg-slate-900 font-mono text-xl font-bold shadow-xs hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700">,</button>
+                <button data-key="SWAP" class="num-key btn-press py-2.5 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center shadow-xs" title="Поміняти одиниці">⇄</button>
+            </div>
+
+            <!-- Секція: Усі одиниці одразу (Фірмова фішка старих конвертерів) -->
+            <div class="flex-1 flex flex-col min-h-[160px]">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Усі одиниці одразу
+                    </h2>
+                    <span class="text-[11px] text-slate-400">Натисніть, щоб скопіювати</span>
+                </div>
+                
+                <div id="allUnitsList" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+                    <!-- Список усіх одиниць рендериться через JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Спливаюче повідомлення (Toast) замість alert() -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-4 py-2 rounded-full text-xs font-semibold shadow-xl opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-400 dark:text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span id="toastMsg">Скопійовано!</span>
+    </div>
+
+    <script>
+        /**
+         * БАЗА ДАНИХ ВЕЛИЧИН ТА КОЕФІЦІЄНТІВ
+         * Для лінійних величин вказано множник відносно базової одиниці (base).
+         * Для температури використовуються спеціальні функції перетворення.
+         */
+        const CONVERTER_DATA = {
+            length: {
+                name: 'Довжина',
+                icon: '📏',
+                defaultFrom: 'm',
+                defaultTo: 'cm',
+                units: {
+                    mm: { name: 'Міліметри', short: 'мм', factor: 0.001 },
+                    cm: { name: 'Сантиметри', short: 'см', factor: 0.01 },
+                    m: { name: 'Метри', short: 'м', factor: 1 },
+                    km: { name: 'Кілометри', short: 'км', factor: 1000 },
+                    in: { name: 'Дюйми', short: 'дюйм', factor: 0.0254 },
+                    ft: { name: 'Фути', short: 'фут', factor: 0.3048 },
+                    yd: { name: 'Ярди', short: 'ярд', factor: 0.9144 },
+                    mi: { name: 'Милі', short: 'миля', factor: 1609.344 },
+                    nmi: { name: 'Морські милі', short: 'мор. миля', factor: 1852 }
+                }
+            },
+            weight: {
+                name: 'Вага / Маса',
+                icon: '⚖️',
+                defaultFrom: 'kg',
+                defaultTo: 'g',
+                units: {
+                    mg: { name: 'Міліграми', short: 'мг', factor: 0.000001 },
+                    g: { name: 'Грами', short: 'г', factor: 0.001 },
+                    kg: { name: 'Кілограми', short: 'кг', factor: 1 },
+                    cwt: { name: 'Центнери', short: 'ц', factor: 100 },
+                    t: { name: 'Тонни', short: 'т', factor: 1000 },
+                    oz: { name: 'Унції', short: 'oz', factor: 0.028349523125 },
+                    lb: { name: 'Фунти', short: 'lb', factor: 0.45359237 }
+                }
+            },
+            temperature: {
+                name: 'Температура',
+                icon: '🌡️',
+                isTemperature: true,
+                defaultFrom: 'c',
+                defaultTo: 'f',
+                units: {
+                    c: { name: 'Градуси Цельсія', short: '°C' },
+                    f: { name: 'Градуси Фаренгейта', short: '°F' },
+                    k: { name: 'Кельвіни', short: 'K' }
+                }
+            },
+            area: {
+                name: 'Площа',
+                icon: '📐',
+                defaultFrom: 'm2',
+                defaultTo: 'ar',
+                units: {
+                    mm2: { name: 'Кв. міліметри', short: 'мм²', factor: 0.000001 },
+                    cm2: { name: 'Кв. сантиметри', short: 'см²', factor: 0.0001 },
+                    m2: { name: 'Кв. метри', short: 'м²', factor: 1 },
+                    ar: { name: 'Сотки (Ар)', short: 'сотка', factor: 100 },
+                    ha: { name: 'Гектари', short: 'га', factor: 10000 },
+                    km2: { name: 'Кв. кілометри', short: 'км²', factor: 1000000 },
+                    ft2: { name: 'Кв. фути', short: 'ft²', factor: 0.09290304 },
+                    ac: { name: 'Акри', short: 'акр', factor: 4046.8564224 }
+                }
+            },
+            volume: {
+                name: "Об'єм",
+                icon: '🧪',
+                defaultFrom: 'l',
+                defaultTo: 'ml',
+                units: {
+                    ml: { name: 'Мілілітри', short: 'мл', factor: 0.001 },
+                    l: { name: 'Літри', short: 'л', factor: 1 },
+                    m3: { name: 'Куб. метри', short: 'м³', factor: 1000 },
+                    tsp: { name: 'Чайні ложки (5 мл)', short: 'ч. л.', factor: 0.005 },
+                    tbsp: { name: 'Столові ложки (15 мл)', short: 'ст. л.', factor: 0.015 },
+                    cup: { name: 'Склянки (250 мл)', short: 'скл.', factor: 0.25 },
+                    floz: { name: 'Рідкі унції (US)', short: 'fl oz', factor: 0.0295735296 },
+                    gal: { name: 'Галони (US)', short: 'gal', factor: 3.785411784 }
+                }
+            },
+            speed: {
+                name: 'Швидкість',
+                icon: '🚀',
+                defaultFrom: 'kmh',
+                defaultTo: 'ms',
+                units: {
+                    ms: { name: 'Метри за секунду', short: 'м/с', factor: 1 },
+                    kmh: { name: 'Кілометри за годину', short: 'км/год', factor: 1 / 3.6 },
+                    mph: { name: 'Милі за годину', short: 'миль/год', factor: 0.44704 },
+                    kn: { name: 'Вузли', short: 'вуз.', factor: 0.514444444 }
+                }
+            },
+            time: {
+                name: 'Час',
+                icon: '⏱️',
+                defaultFrom: 'h',
+                defaultTo: 'min',
+                units: {
+                    s: { name: 'Секунди', short: 'сек', factor: 1 },
+                    min: { name: 'Хвилини', short: 'хв', factor: 60 },
+                    h: { name: 'Години', short: 'год', factor: 3600 },
+                    d: { name: 'Дні', short: 'дн', factor: 86400 },
+                    w: { name: 'Тижні', short: 'тиж', factor: 604800 }
+                }
+            },
+            data: {
+                name: 'Інформація',
+                icon: '💾',
+                defaultFrom: 'gb',
+                defaultTo: 'mb',
+                units: {
+                    b: { name: 'Байти', short: 'Б', factor: 1 },
+                    kb: { name: 'Кілобайти (1024)', short: 'КБ', factor: 1024 },
+                    mb: { name: 'Мегабайти', short: 'МБ', factor: 1048576 },
+                    gb: { name: 'Гігабайти', short: 'ГБ', factor: 1073741824 },
+                    tb: { name: 'Терабайти', short: 'ТБ', factor: 1099511627776 }
+                }
+            },
+            pressure: {
+                name: 'Тиск',
+                icon: ' gauge',
+                iconSymbol: '⏲️',
+                defaultFrom: 'bar',
+                defaultTo: 'mmhg',
+                units: {
+                    pa: { name: 'Паскалі', short: 'Па', factor: 1 },
+                    kpa: { name: 'Кілопаскалі', short: 'кПа', factor: 1000 },
+                    bar: { name: 'Бари', short: 'бар', factor: 100000 },
+                    atm: { name: 'Атмосфери (фіз.)', short: 'атм', factor: 101325 },
+                    mmhg: { name: 'Мм рт. стовпчика', short: 'мм рт.ст.', factor: 133.3223874 },
+                    psi: { name: 'Фунт на кв. дюйм', short: 'PSI', factor: 6894.757293 }
+                }
+            },
+            energy: {
+                name: 'Енергія',
+                icon: '⚡',
+                defaultFrom: 'kcal',
+                defaultTo: 'kj',
+                units: {
+                    j: { name: 'Джоулі', short: 'Дж', factor: 1 },
+                    kj: { name: 'Кілоджоулі', short: 'кДж', factor: 1000 },
+                    cal: { name: 'Калорії', short: 'кал', factor: 4.184 },
+                    kcal: { name: 'Кілокалорії', short: 'ккал', factor: 4184 },
+                    wh: { name: 'Ват-години', short: 'Вт·год', factor: 3600 },
+                    kwh: { name: 'Кіловат-години', short: 'кВт·год', factor: 3600000 }
+                }
+            }
+        };
+
+        // Стан додатку
+        let currentCategory = 'length';
+        let currentFromUnit = CONVERTER_DATA.length.defaultFrom;
+        let currentToUnit = CONVERTER_DATA.length.defaultTo;
+        let showNumpad = true;
+
+        // DOM елементи
+        const categoryTabsEl = document.getElementById('categoryTabs');
+        const fromUnitSelect = document.getElementById('fromUnitSelect');
+        const toUnitSelect = document.getElementById('toUnitSelect');
+        const inputValueEl = document.getElementById('inputValue');
+        const outputValueEl = document.getElementById('outputValue');
+        const allUnitsListEl = document.getElementById('allUnitsList');
+        const swapBtn = document.getElementById('swapBtn');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const signBtn = document.getElementById('signBtn');
+        const numpadContainer = document.getElementById('numpadContainer');
+        const toggleNumpadBtn = document.getElementById('toggleNumpadBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        const toastEl = document.getElementById('toast');
+        const toastMsgEl = document.getElementById('toastMsg');
+
+        /**
+         * Ініціалізація теми (враховує системну тему або збережений вибір)
+         */
+        function initTheme() {
+            const savedTheme = localStorage.getItem('converter_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            }
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('converter_theme', isDark ? 'dark' : 'light');
+            sunIcon.classList.toggle('hidden', !isDark);
+            moonIcon.classList.toggle('hidden', isDark);
+        });
+
+        /**
+         * Показ спливаючого повідомлення (Toast)
+         */
+        let toastTimeout;
+        function showToast(message) {
+            toastMsgEl.textContent = message;
+            toastEl.classList.remove('opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastEl.classList.add('opacity-0');
+            }, 1800);
+        }
+
+        /**
+         * Копіювання тексту в буфер обміну з fallback на execCommand
+         */
+        function copyToClipboard(text, label = '') {
+            if (!text || text === '—') return;
+            
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast(label ? `Скопійовано: ${text} ${label}` : `Скопійовано: ${text}`);
+            } catch (err) {
+                showToast('Не вдалося скопіювати');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        /**
+         * Форматування чисел для гарного відображення без похибок плаваючої коми
+         */
+        function formatNumber(num) {
+            if (isNaN(num) || !isFinite(num)) return '—';
+            if (num === 0) return '0';
+
+            const absNum = Math.abs(num);
+            
+            // Для дуже великих або дуже малих чисел використовуємо науковий формат
+            if (absNum >= 1e12 || (absNum < 1e-7 && absNum > 0)) {
+                return num.toExponential(5).replace(/\.?0+e/, 'e');
+            }
+
+            // Округлення до 8 значущих цифр після коми для уникнення 0.30000000000000004
+            const rounded = Number(num.toPrecision(10));
+            
+            // Форматуємо з пробілами для тисяч, зберігаючи дробову частину
+            const parts = rounded.toString().split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            return parts.join(',');
+        }
+
+        /**
+         * Логіка математичної конвертації
+         */
+        function convertValue(value, fromKey, toKey, categoryKey) {
+            const category = CONVERTER_DATA[categoryKey];
+            if (!category || isNaN(value)) return NaN;
+            if (fromKey === toKey) return value;
+
+            // Окрема формула для температури
+            if (category.isTemperature) {
+                let celsius;
+                if (fromKey === 'c') celsius = value;
+                else if (fromKey === 'f') celsius = (value - 32) * (5 / 9);
+                else if (fromKey === 'k') celsius = value - 273.15;
+
+                if (toKey === 'c') return celsius;
+                if (toKey === 'f') return (celsius * 9 / 5) + 32;
+                if (toKey === 'k') return celsius + 273.15;
+            }
+
+            // Стандартна конвертація через базову одиницю
+            const fromFactor = category.units[fromKey].factor;
+            const toFactor = category.units[toKey].factor;
+            const baseValue = value * fromFactor;
+            return baseValue / toFactor;
+        }
+
+        /**
+         * Рендер верхніх вкладок категорій
+         */
+        function renderCategoryTabs() {
+            categoryTabsEl.innerHTML = '';
+            Object.entries(CONVERTER_DATA).forEach(([key, cat]) => {
+                const isActive = key === currentCategory;
+                const icon = cat.iconSymbol || cat.icon;
+                const btn = document.createElement('button');
+                btn.className = `btn-press shrink-0 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    isActive 
+                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/25' 
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
+                }`;
+                btn.innerHTML = `<span>${icon}</span><span>${cat.name}</span>`;
+                btn.onclick = () => selectCategory(key);
+                categoryTabsEl.appendChild(btn);
+
+                if (isActive) {
+                    setTimeout(() => {
+                        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    }, 50);
+                }
+            });
+        }
+
+        /**
+         * Заповнення випадаючих списків одиниць для обраної категорії
+         */
+        function populateUnitSelects() {
+            const units = CONVERTER_DATA[currentCategory].units;
+            fromUnitSelect.innerHTML = '';
+            toUnitSelect.innerHTML = '';
+
+            Object.entries(units).forEach(([key, unit]) => {
+                const label = `${unit.name} (${unit.short})`;
+                
+                const optFrom = document.createElement('option');
+                optFrom.value = key;
+                optFrom.textContent = label;
+                if (key === currentFromUnit) optFrom.selected = true;
+                fromUnitSelect.appendChild(optFrom);
+
+                const optTo = document.createElement('option');
+                optTo.value = key;
+                optTo.textContent = label;
+                if (key === currentToUnit) optTo.selected = true;
+                toUnitSelect.appendChild(optTo);
+            });
+        }
+
+        /**
+         * Вибір категорії
+         */
+        function selectCategory(catKey) {
+            currentCategory = catKey;
+            currentFromUnit = CONVERTER_DATA[catKey].defaultFrom;
+            currentToUnit = CONVERTER_DATA[catKey].defaultTo;
+            
+            renderCategoryTabs();
+            populateUnitSelects();
+            updateCalculations();
+        }
+
+        /**
+         * Отримання числового значення з поля вводу (підтримка крапки і коми)
+         */
+        function getParsedInput() {
+            const raw = inputValueEl.value.replace(/\s+/g, '').replace(',', '.');
+            if (raw === '' || raw === '-' || raw === '.') return NaN;
+            return parseFloat(raw);
+        }
+
+        /**
+         * Головна функція перерахунку та оновлення інтерфейсу
+         */
+        function updateCalculations() {
+            const val = getParsedInput();
+            const units = CONVERTER_DATA[currentCategory].units;
+
+            if (isNaN(val)) {
+                outputValueEl.textContent = '0';
+            } else {
+                const result = convertValue(val, currentFromUnit, currentToUnit, currentCategory);
+                outputValueEl.textContent = formatNumber(result);
+            }
+
+            // Оновлення списку "Усі одиниці одразу"
+            renderAllUnitsList(isNaN(val) ? 0 : val, units);
+        }
+
+        /**
+         * Рендер таблиці всіх одиниць поточної категорії
+         */
+        function renderAllUnitsList(baseInputVal, units) {
+            allUnitsListEl.innerHTML = '';
+            
+            Object.entries(units).forEach(([key, unit]) => {
+                const converted = convertValue(baseInputVal, currentFromUnit, key, currentCategory);
+                const formatted = formatNumber(converted);
+                const isSource = key === currentFromUnit;
+                const isTarget = key === currentToUnit;
+
+                const row = document.createElement('div');
+                row.className = `btn-press flex items-center justify-between px-3.5 py-2.5 cursor-pointer transition-colors ${
+                    isTarget 
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30' 
+                        : isSource 
+                            ? 'bg-blue-50/50 dark:bg-blue-950/20' 
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`;
+                
+                row.innerHTML = `
+                    <div class="flex flex-col pr-2 min-w-0">
+                        <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                            ${unit.name}
+                            ${isTarget ? '<span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-bold">Обрано</span>' : ''}
+                        </span>
+                        <span class="text-[11px] text-slate-400 font-medium">${unit.short}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="font-mono text-sm font-bold ${isTarget ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}">
+                            ${formatted}
+                        </span>
+                    </div>
+                `;
+
+                // Клік по рядку копіює значення цієї одиниці
+                row.onclick = () => {
+                    const cleanCopyVal = formatted.replace(/\s+/g, '');
+                    copyToClipboard(cleanCopyVal, unit.short);
+                };
+
+                allUnitsListEl.appendChild(row);
+            });
+        }
+
+        /**
+         * Події елементів керування
+         */
+        fromUnitSelect.addEventListener('change', (e) => {
+            currentFromUnit = e.target.value;
+            updateCalculations();
+        });
+
+        toUnitSelect.addEventListener('change', (e) => {
+            currentToUnit = e.target.value;
+            updateCalculations();
+        });
+
+        // Фільтрація вводу з клавіатури (дозволяємо цифри, крапку, кому та мінус)
+        inputValueEl.addEventListener('input', (e) => {
+            let val = e.target.value;
+            // Замінюємо кому на крапку для уніфікації, залишаємо тільки коректні символи
+            val = val.replace(/,/g, '.').replace(/[^0-9.-]/g, '');
+            
+            // Заборона більше однієї крапки
+            const dotParts = val.split('.');
+            if (dotParts.length > 2) {
+                val = dotParts[0] + '.' + dotParts.slice(1).join('');
+            }
+            
+            // Мінус дозволений лише на початку
+            if (val.indexOf('-') > 0) {
+                val = val.replace(/-/g, '');
+            }
+            
+            e.target.value = val;
+            updateCalculations();
+        });
+
+        // Кнопка Swap (поміняти одиниці місцями)
+        function handleSwap() {
+            const temp = currentFromUnit;
+            currentFromUnit = currentToUnit;
+            currentToUnit = temp;
+            
+            fromUnitSelect.value = currentFromUnit;
+            toUnitSelect.value = currentToUnit;
+            updateCalculations();
+        }
+        swapBtn.addEventListener('click', handleSwap);
+
+        // Кнопка очищення
+        clearInputBtn.addEventListener('click', () => {
+            inputValueEl.value = '';
+            inputValueEl.focus();
+            updateCalculations();
+        });
+
+        // Кнопка копіювання головного результату
+        copyBtn.addEventListener('click', () => {
+            const rawResult = outputValueEl.textContent.replace(/\s+/g, '');
+            const unitShort = CONVERTER_DATA[currentCategory].units[currentToUnit].short;
+            copyToClipboard(rawResult, unitShort);
+        });
+
+        // Кнопка зміни знаку (±)
+        signBtn.addEventListener('click', () => {
+            let val = inputValueEl.value.trim();
+            if (!val || val === '0') return;
+            if (val.startsWith('-')) {
+                inputValueEl.value = val.slice(1);
+            } else {
+                inputValueEl.value = '-' + val;
+            }
+            updateCalculations();
+        });
+
+        // Швидкі пресети (1, 10, 100)
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                inputValueEl.value = btn.dataset.preset;
+                updateCalculations();
+            });
+        });
+
+        // Обробка натискань вбудованої цифрової панелі
+        document.querySelectorAll('.num-key').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.key;
+                let current = inputValueEl.value;
+
+                if (key === 'CLEAR') {
+                    inputValueEl.value = '';
+                } else if (key === 'BACKSPACE') {
+                    inputValueEl.value = current.slice(0, -1);
+                } else if (key === 'SWAP') {
+                    handleSwap();
+                    return;
+                } else if (key === '.') {
+                    if (!current.includes('.')) {
+                        inputValueEl.value = (current === '' || current === '-') ? current + '0.' : current + '.';
+                    }
+                } else {
+                    if (current === '0') {
+                        inputValueEl.value = key === '00' ? '0' : key;
+                    } else {
+                        inputValueEl.value = current + key;
+                    }
+                }
+                updateCalculations();
+            });
+        });
+
+        // Показати / приховати вбудовану цифрову панель
+        toggleNumpadBtn.addEventListener('click', () => {
+            showNumpad = !showNumpad;
+            numpadContainer.classList.toggle('hidden', !showNumpad);
+            toggleNumpadBtn.classList.toggle('ring-2', showNumpad);
+            toggleNumpadBtn.classList.toggle('ring-blue-500', showNumpad);
+        });
+
+        // Запуск додатку при завантаженні сторінки
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            renderCategoryTabs();
+            populateUnitSelects();
+            updateCalculations();
+        });
+    </script>
+</body>
+</html>
+```
